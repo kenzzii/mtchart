@@ -1,0 +1,19 @@
+#summary How to migrate from pChart to mtChart
+#labels Phase-Deploy,pChart
+
+= Introduction =
+
+This document provides you with the commonly used steps to migrate from pChart to mtChart.
+
+= Common steps =
+  # Remove all pChart-includes and just include mtChart.php: `include('mtChart/mtChart.php');`
+  # Replace the two instanciation commands for pData and pChart with the one for mtChart only: `$Graph = new mtChart($width, $height);`
+  # Replace all references to the former pData object with references to the mtChart object. I.e. `$Graph->addPoint($value, 'Serie1');`
+  # Remove all calls to the methods `getData()` and `getDataDescription()`. I.e. call plotting functions now like this: `$Graph->drawLineGraph('Serie1');`
+  # Replace font names which are no longer part of the package. The new standard font is now `DejaVusSansCondensed` (8 Pixels).
+  # Replace function argument values `-1` with `NULL`.
+
+This should take care of most of the standard graphing applications.
+
+= Replacing pCache =
+The caching system has changed significantly and is now integrated into mtChart. Please refer to the document CachingSystem for implementation information.
