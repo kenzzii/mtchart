@@ -10,7 +10,7 @@ This document provides you with the commonly used steps to migrate from pChart t
   # Replace the two instanciation commands for pData and pChart with the one for mtChart only: `$Graph = new mtChart($width, $height);`
   # Replace all references to the former pData object with references to the mtChart object. I.e. `$Graph->addPoint($value, 'Serie1');`
   # Remove all calls to the methods `GetData()` and `GetDataDescription()`. I.e. call plotting functions now like this: `$Graph->drawLineGraph('Serie1');`
-  # Replace the first letter of all method calls of the former pData and pCache object with a lowercase letter. I.e. `addPoint()` instead of `AddPoint()`. (Alle method names start with a lower case letter now.)
+  # Replace the first letter of all method calls of the former pData and pCache object with a lowercase letter. I.e. `addPoint()` instead of `AddPoint()`. (All method names start with a lower case letter now.)
   # Replace font names which are no longer part of the package. The new standard font is now `DejaVusSansCondensed` (8 Pixels).
   # Replace function argument values `-1` with `NULL`.
 
