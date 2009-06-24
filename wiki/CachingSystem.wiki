@@ -1,5 +1,5 @@
 #summary Implementation guide for the mtChart caching system.
-#labels Phase-Deploy
+#labels Phase-Deploy,Cache
 
 = Introduction =
 
