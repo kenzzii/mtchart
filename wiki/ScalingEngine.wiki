@@ -1,0 +1,16 @@
+#summary Notes concerning the implementation of the automatic scaling engine
+#labels Phase-Implementation
+
+= Introduction =
+
+The automatic scaling is implemented using the algorithm proposed by W.J. Dixon and R.A. Kronmal (University of California, Los Angeles) in their publication _The Choice of Origin and Scale for Graphs_ (1965). It improves on ideas formulated by T. Giammo (Space Technolog Laboratories, Inc., Redondo Beach, California) in his publication _A Mathematical Method for the Automatic Scaling of a Function_ (1964). Hence the phrase _using space technology_ on the project homepage.
+
+= Parameter translation =
+||*Paper*||*mtChart*||*Description*||
+||S||$DivisionCount||Number of intervals on the axis, equals (marks minus one)||
+||A||$VMin (Before calculation)||Minimum value on the plot||
+||B||$VMax (After calculation)||Maximum value on the plot||
+||R||$DataRange||Range of all values, equals ($VMax - $VMin)||
+||a||$VMin||Minimum value for the scale||
+||b||$VMax||Maximum value for the scale||
+||s||$DivisionWidth/$DivisionRatio||Ratio of values/divisions||
