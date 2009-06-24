@@ -15,5 +15,9 @@ This document provides you with the commonly used steps to migrate from pChart t
 
 This should take care of most of the standard graphing applications.
 
+= Further possible tasks =
+  * All class fields are now protected. Direct access is only allowed to the public `$Graph->Image` field where the image handle resides.
+  * There are several set/get methods to provide access to certain fields: `setData()/getData(), setDataDescription()/getDataDescription, setAntialiasQuality()` etc.
+
 = Replacing pCache =
 The caching system has changed significantly and is now integrated into mtChart. Please refer to the document CachingSystem for implementation information.
