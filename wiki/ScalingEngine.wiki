@@ -14,3 +14,20 @@ The automatic scaling is implemented using the algorithm proposed by W.J. Dixon 
 ||a||$VMin||Minimum value for the scale||
 ||b||$VMax||Maximum value for the scale||
 ||s||$DivisionWidth/$DivisionRatio||Ratio of values/divisions||
+
+= Set definition =
+For each $DivisionCount <= 10, we define a basic set for the round numbers called $p: 
+{{{
+$p[1] = array(1);
+$p[2] = array(1, 5);
+$p[3] = array(1, 3.3, 6.6);
+$p[4] = array(1, 2.5, 5, 7.5);
+$p[5] = array(1, 2, 4, 6, 8);
+$p[6] = array(1, 1.6, 3.3, 5, 6.6);
+$p[7] = array(1, 1.4, 2.9, 4.3, 5.7, 7.1, 8.6);
+$p[8] = array(1, 1.25, 2.5, 3.75, 4, 5.25, 6.5, 7,75);
+$p[9] = array(1, 1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9);
+$p[10] = array(1, 2, 3, 4, 5, 6, 7, 8, 9);
+}}}
+
+For $DivisionCounts > 10 we just use the $p[10] array. (Those aren't really the problem anyway.)
