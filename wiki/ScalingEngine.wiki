@@ -9,7 +9,7 @@ The automatic scaling is implemented using the algorithm proposed by W.J. Dixon 
 ||*Paper*||*mtChart*||*Description*||
 ||S||$DivisionCount||Number of intervals on the axis, equals (marks minus one)||
 ||A||$VMin (Before calculation)||Minimum value on the plot||
-||B||$VMax (After calculation)||Maximum value on the plot||
+||B||$VMax (Before calculation)||Maximum value on the plot||
 ||R||$DataRange||Range of all values, equals ($VMax - $VMin)||
 ||a||$VMin||Minimum value for the scale||
 ||b||$VMax||Maximum value for the scale||
