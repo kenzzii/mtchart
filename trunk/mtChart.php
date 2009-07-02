@@ -682,6 +682,7 @@ class mtChart {
 
             $this->VMax = $scale['max'];
             $this->VMin = $scale['min'];
+            $Divisions = $scale['divisions'];
         } else {
             // Scale set manually
             $Divisions = $this->Divisions;
@@ -692,8 +693,8 @@ class mtChart {
             $this->DataRange = 0.1;
         }
 
-        $this->DivisionCount = $Divisions;
-        $this->DivisionHeight = ($this->GArea_Y2 - $this->GArea_Y1) / $Divisions;
+        $this->DivisionCount = max($Divisions, 1);
+        $this->DivisionHeight = ($this->GArea_Y2 - $this->GArea_Y1) / $this->DivisionCount;
         $this->DivisionRatio  = ($this->GArea_Y2 - $this->GArea_Y1) / $this->DataRange;
         $this->GAreaXOffset  = 0;
         $this->DataCount = count($this->Data);
@@ -813,9 +814,10 @@ class mtChart {
      * @param float $max
      * @param int $nint = 0
      * @param array $p = NULL 
+     * @param float $origin = NULL
      * @return array $scale = array('min' => ..., 'max' => ...)
      */
-    private function computeScale($min, $max, $nint = 0, $p = NULL) {
+    private function computeScale($min, $max, $nint = 0, $p = NULL, $origin = NULL) {
         // Correct max/min if necessary        
         if($max < $min) {
             list($max, $min) = array($min, $max);            
@@ -886,8 +888,32 @@ class mtChart {
                 ++$k;
             }
         }
+        
+        if(is_null($origin) && (0 == $A || 0 == $B)) {
+            $origin = 0;
+        }
+        
+        if(!is_null($origin)) {
+            if($origin <= $A) {
+                $a = $origin;
+                $b = $B + $s;
+            } else if($origin >= $B) {
+                $a = -$A + $s;
+                $b = $origin;
+            } else {
+                $a = $A - $s;
+                $b = $B + $s;
+            }
+        }
+        
+        // Normalize scale
+        $a += fmod($a, $s);
+        $b -= fmod($b, $s);
+        if(($b - $a) % $nint) {
+            $nint = ($b - $a) / $s;
+        }
 
-        return array('min' => $a, 'max' => $b);
+        return array('min' => $a, 'max' => $b, 'divisions' => $nint);
     }
     
     /**
