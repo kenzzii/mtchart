@@ -8,7 +8,7 @@
  * @author Christian Studer <christian.studer@meteotest.ch>
  * @package mtChart
  * @license GPL 3.0
- * @version 0.1
+ * @version 0.1.1
  */
 
 /*
@@ -109,6 +109,7 @@ class mtChart {
     protected $DivisionRatio   = NULL;    // Value-to-pixel ratio on the y-scale
     protected $XDivisionRatio  = NULL;    // Value-to-pixel ratio on the x-scale
     protected $DivisionWidth   = NULL;    // Pixel width of a division on the y-axis
+    protected $XDivisionWidth  = NULL;    // Pixel width of a division on the x-axis
     protected $XInterval       = 1;       // Interval for skipping labels and grid lines on the x-axis
     protected $DataCount       = NULL;    // Number of items in the data array
     protected $Currency        = '$';     // Current currency symbol
@@ -806,23 +807,23 @@ class mtChart {
     /**
      * Compute a scale for these values
      *
-     * Needs at least a minumum and maximum value which 
+     * Needs at least a minumum and maximum value which
      * should be included, a number of intervals ($nint) and
-     * a base set of round numbers (Defaults to natural numbers.) 
-     * 
+     * a base set of round numbers (Defaults to natural numbers.)
+     *
      * @param float $min
      * @param float $max
      * @param int $nint = 0
-     * @param array $p = NULL 
+     * @param array $p = NULL
      * @param float $origin = NULL
      * @return array $scale = array('min' => ..., 'max' => ...)
      */
     private function computeScale($min, $max, $nint = 0, $p = NULL, $origin = NULL) {
-        // Correct max/min if necessary        
+        // Correct max/min if necessary
         if($max < $min) {
-            list($max, $min) = array($min, $max);            
+            list($max, $min) = array($min, $max);
         }
-        
+
         // Estimate a number of intervals if necessary
         if(0 == $nint) {
             if($max - $min) {
@@ -836,7 +837,7 @@ class mtChart {
         $A = $min;
         $B = $max;
         $R = $B - $A;
-        
+
         // If all values equal, abort somehow
         if(! $R) {
             return array('min' => $A, 'max' => $A + 1);
@@ -888,11 +889,11 @@ class mtChart {
                 ++$k;
             }
         }
-        
+
         if(is_null($origin) && (0 == $A || 0 == $B)) {
             $origin = 0;
         }
-        
+
         if(!is_null($origin)) {
             if($origin <= $A) {
                 $a = $origin;
@@ -905,7 +906,7 @@ class mtChart {
                 $b = $B + $s;
             }
         }
-        
+
         // Normalize scale
         $a += fmod($a, $s);
         $b -= fmod($b, $s);
@@ -915,7 +916,7 @@ class mtChart {
 
         return array('min' => $a, 'max' => $b, 'divisions' => $nint);
     }
-    
+
     /**
      * Format value according to current format
      *
@@ -967,95 +968,53 @@ class mtChart {
         $this->drawLine($this->GArea_X1, $this->GArea_Y1, $this->GArea_X1, $this->GArea_Y2, $R, $G, $B);
         $this->drawLine($this->GArea_X1, $this->GArea_Y2, $this->GArea_X2, $this->GArea_Y2, $R, $G, $B);
 
-        // y-scale
+        // Y-scale first
+        // If scale is not set manually
         if(is_null($this->VMin) && is_null($this->VMax)) {
-            $this->VMin = $this->Data[0][$YSerieName];
-            $this->VMax = $this->Data[0][$YSerieName];
+            // Set arbitrary limits
+            if(isset($this->Data[0][$YSerieName])) {
+                $this->VMin = $this->Data[0][$YSerieName];
+                $this->VMax = $this->Data[0][$YSerieName];
+            } else {
+                $this->VMin = NULL;
+                $this->VMax = NULL;
+            }
 
             foreach($this->Data as $Key => $Values) {
                 if(isset($this->Data[$Key][$YSerieName])) {
                     $Value = $this->Data[$Key][$YSerieName];
-                    if($this->VMax < $Value) { $this->VMax = $Value; }
-                    if($this->VMin > $Value) { $this->VMin = $Value; }
+                    if(is_numeric($Value)) {
+                        if(is_null($this->VMax) || $this->VMax < $Value) {
+                            $this->VMax = $Value;
+                        }
+                        if(is_null($this->VMin) || $this->VMin > $Value) {
+                            $this->VMin = $Value;
+                        }
+                    }
                 }
             }
 
-            if($this->VMax > 0) {
-                $this->VMax = ceil($this->VMax);
-            } else {
-                $this->VMax = floor($this->VMax);
-            }
-            if($this->VMin > 0) {
-                $this->VMin = ceil($this->VMin);
-            } else {
-                $this->VMin = floor($this->VMin);
-            }
-
-            $this->DataRange = $this->VMax - $this->VMin;
-            if($this->DataRange == 0) {
-                $this->DataRange = .1;
+            // Special case: All values are the same
+            if($this->VMax == $this->VMin) {
+                if($this->VMax >= 0) {
+                    ++$this->VMax;
+                    $this->VMin = $this->VMax - 1;
+                } else {
+                    --$this->VMin;
+                    $this->VMax = $this->VMin + 1;
+                }
             }
 
             // Compute automatic scaling
-            $ScaleOk = FALSE;
-            $Factor = 1;
-            $MinDivHeight = 25;
-            $MaxDivs = ($this->GArea_Y2 - $this->GArea_Y1) / $MinDivHeight;
-            $Divisions = 2;
+            $DataRange = $this->VMax - $this->VMin;
+            $MaxDivs = ($this->GArea_Y2 - $this->GArea_Y1) / $this->MinDivHeight;
+            $Divisions = floor($MaxDivs);
 
-            if($this->VMin == 0 && $this->VMax == 0) {
-                $this->VMin = 0;
-                $this->VMax = 2;
-                $Scale = 1;
-                $Divisions = 2;
-            } else if($MaxDivs > 1) {
-                while(!$ScaleOk) {
-                    $Scale1 = ($this->VMax - $this->VMin) / $Factor;
-                    $Scale2 = ($this->VMax - $this->VMin) / $Factor / 2;
+            $scale = $this->computeScale($this->VMin, $this->VMax, $Divisions);
 
-                    if($Scale1 > 1 && $Scale1 <= $MaxDivs && !$ScaleOk) {
-                        $ScaleOk = TRUE;
-                        $Divisions = floor($Scale1); $Scale = 1;
-                    }
-
-                    if($Scale2 > 1 && $Scale2 <= $MaxDivs && !$ScaleOk) {
-                        $ScaleOk = TRUE;
-                        $Divisions = floor($Scale2);
-                        $Scale = 2;
-                    }
-
-                    if(!$ScaleOk) {
-                        if($Scale2 > 1) {
-                            $Factor *= 2 * $MaxDivs;
-                        }
-                        if($Scale2 < 1) {
-                            $Factor /= 2 * $MaxDivs;
-                        }
-                    }
-                }
-
-                $VMaxFactor = $this->VMax / $Scale / $Factor;
-                $VMinFactor = $this->VMin / $Scale / $Factor;
-
-                if(! $this->isRealInt($VMaxFactor)) {
-                    $this->VMax = ceil($VMaxFactor) * $Scale * $Factor;
-                    ++$Divisions;
-                }
-
-                if(! $this->isRealInt($VMinFactor)) {
-                    $this->VMin = floor($VMinFactor) * $Scale * $Factor;
-                    ++$Divisions;
-                }
-            } else {
-                // Small graph
-                $Scale = 1;
-            }
-
-            if($this->isRealInt(($this->VMax-$this->VMin)/($Divisions - 1))) {
-                --$Divisions;
-            } else if($this->isRealInt(($this->VMax-$this->VMin)/($Divisions+1))) {
-                ++$Divisions;
-            }
+            $this->VMax = $scale['max'];
+            $this->VMin = $scale['min'];
+            $Divisions = $scale['divisions'];
         } else {
             $Divisions = $this->Divisions;
         }
@@ -1064,15 +1023,19 @@ class mtChart {
 
         $this->DataRange = $this->VMax - $this->VMin;
         if($this->DataRange == 0) {
-            $this->DataRange = .1;
+            $this->DataRange = 0.1;
         }
 
-        $this->DivisionHeight = ($this->GArea_Y2 - $this->GArea_Y1) / $Divisions;
+        $this->DivisionCount = max($Divisions, 1);
+        $this->DivisionHeight = ($this->GArea_Y2 - $this->GArea_Y1) / $this->DivisionCount;
         $this->DivisionRatio  = ($this->GArea_Y2 - $this->GArea_Y1) / $this->DataRange;
+        $this->GAreaXOffset  = 0;
+        $this->DataCount = count($this->Data);
+
         $YPos = $this->GArea_Y2;
         $XMin = NULL;
 
-        for($i = 1; $i <= $Divisions+1; ++$i) {
+        for($i = 1; $i <= $Divisions + 1; ++$i) {
             $this->drawLine($this->GArea_X1, $YPos, $this->GArea_X1 - 5, $YPos, $R, $G, $B);
             $Value     = $this->VMin + ($i - 1) * (($this->VMax - $this->VMin) / $Divisions);
             $Value     = round($Value, $Decimals);
@@ -1086,121 +1049,78 @@ class mtChart {
                 $XMin = $this->GArea_X1 - 10 - $TextWidth;
             }
 
-            $YPos = $YPos - $this->DivisionHeight;
+            $YPos -= $this->DivisionHeight;
         }
 
-        // Process x-scale
-        if($this->VXMin == NULL && $this->VXMax == NULL) {
-            $this->VXMin = $this->Data[0][$XSerieName];
-            $this->VXMax = $this->Data[0][$XSerieName];
+        // X-scale second
+        // If scale is not set manually
+        if(is_null($this->VXMin) && is_null($this->VXMax)) {
+            // Set arbitrary limits
+            if(isset($this->Data[0][$XSerieName])) {
+                $this->VXMin = $this->Data[0][$XSerieName];
+                $this->VXMax = $this->Data[0][$XSerieName];
+            } else {
+                $this->VXMin = NULL;
+                $this->VXMax = NULL;
+            }
 
             foreach($this->Data as $Key => $Values) {
                 if(isset($this->Data[$Key][$XSerieName])) {
                     $Value = $this->Data[$Key][$XSerieName];
-                    if($this->VXMax < $Value) {
-                        $this->VXMax = $Value;
-                    }
-                    if($this->VXMin > $Value) {
-                        $this->VXMin = $Value;
+                    if(is_numeric($Value)) {
+                        if(is_null($this->VXMax) || $this->VXMax < $Value) {
+                            $this->VXMax = $Value;
+                        }
+                        if(is_null($this->VXMin) || $this->VXMin > $Value) {
+                            $this->VXMin = $Value;
+                        }
                     }
                 }
             }
 
-            if(! $this->isRealInt($this->VXMax)) {
-                if($this->VXMax > 0) {
-                    $this->VXMax = ceil($this->VXMax);
+            // Special case: All values are the same
+            if($this->VXMax == $this->VXMin) {
+                if($this->VXMax >= 0) {
+                    ++$this->VXMax;
+                    $this->VXMin = $this->VXMax - 1;
                 } else {
-                    $this->VXMax = floor($this->VXMax);
+                    --$this->VXMin;
+                    $this->VXMax = $this->VXMin + 1;
                 }
-            }
-
-            $this->DataRange = $this->VMax - $this->VMin;
-            if($this->DataRange == 0) {
-                $this->DataRange = .1;
             }
 
             // Compute automatic scaling
-            $ScaleOk = FALSE;
-            $Factor = 1;
-            $MinDivWidth = 25;
-            $MaxDivs = ($this->GArea_X2 - $this->GArea_X1) / $MinDivWidth;
-            $XDivisions = 2;
+            $DataRange = $this->VXMax - $this->VXMin;
+            $MaxDivs = ($this->GArea_X2 - $this->GArea_X1) / $this->MinDivHeight;
+            $Divisions = floor($MaxDivs);
 
-            if($this->VXMin == 0 && $this->VXMax == 0) {
-                $this->VXMin = 0;
-                $this->VXMax = 2;
-                $Scale = 1;
-                $XDivisions = 2;
-            } else if($MaxDivs > 1) {
-                while(!$ScaleOk) {
-                    $Scale1 = ($this->VXMax - $this->VXMin) / $Factor;
-                    $Scale2 = ($this->VXMax - $this->VXMin) / $Factor / 2;
+            $scale = $this->computeScale($this->VXMin, $this->VXMax, $Divisions);
 
-                    if($Scale1 > 1 && $Scale1 <= $MaxDivs && !$ScaleOk) {
-                        $ScaleOk = TRUE;
-                        $XDivisions = floor($Scale1);
-                        $Scale = 1;
-                    }
-                    if($Scale2 > 1 && $Scale2 <= $MaxDivs && !$ScaleOk) {
-                        $ScaleOk = TRUE;
-                        $XDivisions = floor($Scale2);
-                        $Scale = 2;
-                    }
-                    if(!$ScaleOk)
-                    {
-                        if($Scale2 > 1) {
-                            $Factor *= 2 * $MaxDivs;
-                        }
-                        if($Scale2 < 1) {
-                            $Factor /= 2 * $MaxDivs;
-                        }
-                    }
-                }
-
-                $VXMaxFactor = $this->VXMax / $Scale / $Factor;
-                $VXMinFactor = $this->VXMin / $Scale / $Factor;
-
-                if(! $this->isRealInt($VXMaxFactor)) {
-                    $this->VXMax = ceil($VXMaxFactor) * $Scale * $Factor;
-                    $XDivisions++;
-                }
-
-                if(! $this->isRealInt($VXMinFactor)) {
-                    $this->VXMin = floor($VXMinFactor) * $Scale * $Factor;
-                    $XDivisions++;
-                }
-            } else {
-                // Small graph
-                $Scale = 1;
-            }
-
-            if($this->isRealInt(($this->VXMax-$this->VXMin)/($XDivisions - 1))) {
-                $XDivisions--;
-            } else if($this->isRealInt(($this->VXMax-$this->VXMin)/($XDivisions+1))) {
-                $XDivisions++;
-            }
+            $this->VXMax = $scale['max'];
+            $this->VXMin = $scale['min'];
+            $Divisions = $scale['divisions'];
         } else {
-            $XDivisions = $this->XDivisions;
+            $Divisions = $this->XDivisions;
         }
 
         $this->XDivisionCount = $Divisions;
-        $this->DataCount      = $Divisions + 2;
 
-        $XDataRange = $this->VXMax - $this->VXMin;
-        if($XDataRange == 0) {
-            $XDataRange = .1;
+        $this->XDataRange = $this->VXMax - $this->VXMin;
+        if($this->XDataRange == 0) {
+            $this->XDataRange = 0.1;
         }
 
-        $this->DivisionWidth   = ($this->GArea_X2 - $this->GArea_X1) / $XDivisions;
-        $this->XDivisionRatio  = ($this->GArea_X2 - $this->GArea_X1) / $XDataRange;
+        $this->XDivisionCount = max($Divisions, 1);
+        $this->XDivisionHeight = ($this->GArea_X2 - $this->GArea_X1) / $this->XDivisionCount;
+        $this->XDivisionRatio  = ($this->GArea_X2 - $this->GArea_X1) / $this->XDataRange;
 
         $XPos = $this->GArea_X1;
         $YMax = NULL;
-
-        for($i = 1; $i <= $XDivisions + 1; ++$i) {
+        
+        for($i = 1; $i <= $Divisions + 1; ++$i) {
             $this->drawLine($XPos, $this->GArea_Y2, $XPos, $this->GArea_Y2 + 5, $R, $G, $B);
 
-            $Value     = $this->VXMin + ($i - 1) * (($this->VXMax - $this->VXMin) / $XDivisions);
+            $Value     = $this->VXMin + ($i - 1) * (($this->VXMax - $this->VXMin) / $Divisions);
             $Value     = round($Value, $Decimals);
             $Value     = $this->formatValue($Value, $this->DataDescription['Format']['Y'], $this->DataDescription['Unit']['Y']);
 
@@ -1224,9 +1144,9 @@ class mtChart {
                 $YMax = $YPos;
             }
 
-            $XPos += $this->DivisionWidth;
+            $XPos += $this->XDivisionHeight;
         }
-
+                
         // Write the y-axis caption if set
         if(isset($this->DataDescription['Axis']['Y'])) {
             $Position   = imageftbbox($this->FontSize, 90, $this->FontName, utf8_decode($this->DataDescription['Axis']['Y']));
