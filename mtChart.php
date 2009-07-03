@@ -8,7 +8,7 @@
  * @author Christian Studer <christian.studer@meteotest.ch>
  * @package mtChart
  * @license GPL 3.0
- * @version 0.1.1
+ * @version 0.1.2
  */
 
 /*
@@ -602,14 +602,15 @@ class mtChart {
         $this->drawLine($this->GArea_X1, $this->GArea_Y2, $this->GArea_X2, $this->GArea_Y2, $R, $G, $B);
 
         // If scale is not set manually
-        if(is_null($this->VMin) && is_null($this->VMax)) {
+        if(is_null($this->VMin) || is_null($this->VMax)) {
             // Set arbitrary limits
             if(isset($this->DataDescription['Values'][0])) {
-                $this->VMin = $this->Data[0][$this->DataDescription['Values'][0]];
-                $this->VMax = $this->Data[0][$this->DataDescription['Values'][0]];
-            } else {
-                $this->VMin = NULL;
-                $this->VMax = NULL;
+                if(is_null($this->VMin)) {
+                    $this->VMin = $this->Data[0][$this->DataDescription['Values'][0]];
+                }
+                if(is_null($this->VMax)) {
+                    $this->VMax = $this->Data[0][$this->DataDescription['Values'][0]];
+                }
             }
 
             // Compute min/max
@@ -840,7 +841,7 @@ class mtChart {
 
         // If all values equal, abort somehow
         if(! $R) {
-            return array('min' => $A, 'max' => $A + 1);
+            return array('min' => $A, 'max' => $A + 1, 'divisions' => 1);
         }
 
         // Prepare nice numbers if necessary
@@ -910,7 +911,16 @@ class mtChart {
         // Normalize scale
         $a += fmod($a, $s);
         $b -= fmod($b, $s);
-        if(($b - $a) % $nint) {
+        
+        while($a <= $A - $s) {
+            $a += $s;
+        }
+        
+        while($b >= $B + $s) {
+            $b -= $s;
+        }
+        
+        if(fmod($b - $a, $nint)) {
             $nint = ($b - $a) / $s;
         }
 
@@ -970,15 +980,16 @@ class mtChart {
 
         // Y-scale first
         // If scale is not set manually
-        if(is_null($this->VMin) && is_null($this->VMax)) {
+        if(is_null($this->VMin) || is_null($this->VMax)) {
             // Set arbitrary limits
             if(isset($this->Data[0][$YSerieName])) {
-                $this->VMin = $this->Data[0][$YSerieName];
-                $this->VMax = $this->Data[0][$YSerieName];
-            } else {
-                $this->VMin = NULL;
-                $this->VMax = NULL;
-            }
+                if(is_null($this->VMin)) {
+                    $this->VMin = $this->Data[0][$YSerieName];
+                }
+                if(is_null($this->VMax)) {
+                    $this->VMax = $this->Data[0][$YSerieName];
+                }
+            } 
 
             foreach($this->Data as $Key => $Values) {
                 if(isset($this->Data[$Key][$YSerieName])) {
@@ -1054,15 +1065,16 @@ class mtChart {
 
         // X-scale second
         // If scale is not set manually
-        if(is_null($this->VXMin) && is_null($this->VXMax)) {
+        if(is_null($this->VXMin) || is_null($this->VXMax)) {
             // Set arbitrary limits
             if(isset($this->Data[0][$XSerieName])) {
-                $this->VXMin = $this->Data[0][$XSerieName];
-                $this->VXMax = $this->Data[0][$XSerieName];
-            } else {
-                $this->VXMin = NULL;
-                $this->VXMax = NULL;
-            }
+                if(is_null($this->VXMin)) {
+                    $this->VXMin = $this->Data[0][$XSerieName];
+                }
+                if(is_null($this->VXMax)) {
+                    $this->VXMax = $this->Data[0][$XSerieName];
+                }
+            } 
 
             foreach($this->Data as $Key => $Values) {
                 if(isset($this->Data[$Key][$XSerieName])) {
