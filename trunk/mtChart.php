@@ -392,7 +392,7 @@ class mtChart {
         if($handle) {
             $success = TRUE;
             while($buffer = fgets($handle)) {
-                $Values = split($Delimiter, trim($buffer));
+                $Values = explode($Delimiter, trim($buffer));
                 if(count($Values) == 3) {
                     $this->Palette[$ColorID]['R'] = $Values[0];
                     $this->Palette[$ColorID]['G'] = $Values[1];
@@ -1801,7 +1801,9 @@ class mtChart {
                 // Draw value point
                 if(is_numeric($Value)) {
                     // Check for image as dot
-                    if(@is_null($this->DataDescription['Symbol'][$ColName])) {
+                    if(isset($this->DataDescription['Symbol'][$ColName]) and ! is_null($this->DataDescription['Symbol'][$ColName])) {
+                        imagecopymerge($this->Picture, $Symbol, $XPos+1-$ImageWidth/2, $YPos+1-$ImageHeight/2, 0, 0, $ImageWidth, $ImageHeight,100);
+                    } else {
                         // Draw shadow
                         if($Shadow) {
                             if(isset($R3, $G3, $B3)) {
@@ -1827,8 +1829,6 @@ class mtChart {
 
                             $this->drawFilledCircle($XPos + 1, $YPos + 1, $SmallRadius, $R2, $G2, $B2);
                         }
-                    } else {
-                        imagecopymerge($this->Picture, $Symbol, $XPos+1-$ImageWidth/2, $YPos+1-$ImageHeight/2, 0, 0, $ImageWidth, $ImageHeight,100);
                     }
                 }
 
@@ -4578,7 +4578,7 @@ class mtChart {
     public function getImageMap($MapName, $Flush = TRUE) {
         // Strip HTML query strings
         $Values   = $this->tmpFolder . $MapName;
-        $Value    = split('\?', $Values);
+        $Value    = explode('?', $Values);
         $FileName = $Value[0];
 
         if(file_exists($FileName)) {
